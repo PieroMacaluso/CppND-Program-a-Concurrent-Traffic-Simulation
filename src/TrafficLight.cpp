@@ -11,7 +11,7 @@ T MessageQueue<T>::receive()
     // to wait for and receive new messages and pull them from the queue using move semantics.
     // The received object should then be returned by the receive function.
     std::unique_lock<std::mutex> u_lock(_mutex);
-    _condition.wait(uLock);
+    _cv.wait(u_lock);
     T msg = std::move(_queue.back());
     return msg;
 }
@@ -23,7 +23,7 @@ void MessageQueue<T>::send(T &&msg)
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
     std::lock_guard<std::mutex> guard(_mutex);
     _queue.emplace_front(msg);
-    _condition.notify_one();
+    _cv.notify_one();
 }
 
 /* Implementation of class "TrafficLight" */
@@ -38,7 +38,8 @@ void TrafficLight::waitForGreen()
     // FP.5b : add the implementation of the method waitForGreen, in which an infinite while-loop
     // runs and repeatedly calls the receive function on the message queue.
     // Once it receives TrafficLightPhase::green, the method returns.
-    while (true) {
+    while (true)
+    {
         TrafficLightPhase phase = _messageQueue.receive();
         if (phase == TrafficLightPhase::green)
             return;
@@ -53,7 +54,7 @@ TrafficLightPhase TrafficLight::getCurrentPhase()
 void TrafficLight::simulate()
 {
     // FP.2b : Finally, the private method „cycleThroughPhases“ should be started in a thread when the public method „simulate“ is called. To do this, use the thread queue in the base class.
-
+    threads.emplace_back(std::thread(&TrafficLight::cycleThroughPhases, this));
 }
 
 // virtual function which is executed in a thread
